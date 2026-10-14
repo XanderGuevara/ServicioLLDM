@@ -1,0 +1,1771 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Servicio especial de la niñez</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-deep: #030916;
+      --bg-navy: #091938;
+      --card-grad: linear-gradient(155deg, rgba(23, 68, 145, 0.94) 0%, rgba(11, 36, 84, 0.97) 100%);
+      --gold: #eab308;
+      --gold-light: #fef08a;
+      --gold-glow: rgba(250, 204, 21, 0.45);
+      --gold-border: rgba(250, 204, 21, 0.55);
+      --text-white: #f8fafc;
+      --btn-blue: #1d4ed8;
+      --btn-dark: rgba(10, 22, 48, 0.9);
+      --font-scale: 1;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: radial-gradient(circle at 50% -10%, #193b7a 0%, var(--bg-deep) 75%);
+      color: var(--text-white);
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* CANVAS DE PARTÍCULAS DORADAS EN JS */
+    #particlesCanvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* BARRA DE PROGRESO SUPERIOR */
+    .progress-track {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      z-index: 300;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #ca8a04, #fef08a, #eab308);
+      width: 0%;
+      transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+      box-shadow: 0 0 15px #facc15;
+    }
+
+    /* BARRA SUPERIOR DE HERRAMIENTAS */
+    .top-bar {
+      background: rgba(4, 11, 26, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--gold-border);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      transition: all 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    body.ui-hidden .top-bar {
+      transform: translateY(-120%);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .hint-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .hint-text {
+      color: var(--gold-light);
+      font-size: 0.85rem;
+      font-weight: 600;
+      outline: none;
+    }
+
+    .sync-status {
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 99px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.45);
+      color: #6ee7b7;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .sync-dot {
+      width: 7px;
+      height: 7px;
+      background: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #10b981;
+      animation: pulseDot 2s infinite;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.45; }
+    }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .divider {
+      color: rgba(255, 255, 255, 0.2);
+      margin: 0 2px;
+    }
+
+    .label-group {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--gold);
+      margin-right: 2px;
+      outline: none;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 0.83rem;
+      font-weight: 600;
+      padding: 8px 13px;
+      border-radius: 8px;
+      border: 1px solid var(--gold-border);
+      background: var(--btn-dark);
+      color: var(--text-white);
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      user-select: none;
+      min-height: 38px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn:hover {
+      border-color: var(--gold-light);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(234, 179, 8, 0.25);
+    }
+
+    .btn:active {
+      transform: scale(0.96);
+    }
+
+    .btn-blue {
+      background: linear-gradient(135deg, #1e4b94 0%, #15356d 100%);
+    }
+
+    .btn-gold {
+      background: linear-gradient(135deg, #facc15 0%, #ca8a04 100%);
+      color: #040b1a;
+      font-weight: 700;
+      border-color: #fef08a;
+    }
+
+    /* EFECTO RIPPLE TÁCTIL EN JS */
+    .ripple-effect {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(254, 240, 138, 0.45);
+      transform: scale(0);
+      animation: rippleAnim 0.6s ease-out;
+      pointer-events: none;
+    }
+
+    @keyframes rippleAnim {
+      to { transform: scale(4); opacity: 0; }
+    }
+
+    /* BOTÓN FLOTANTE CUANDO LOS BOTONES ESTÁN OCULTOS */
+    .floating-toggle {
+      position: fixed;
+      top: 14px;
+      right: 16px;
+      z-index: 250;
+      background: rgba(9, 25, 56, 0.78);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--gold);
+      color: var(--gold-light);
+      padding: 9px 16px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    body.ui-hidden .floating-toggle {
+      display: inline-flex;
+      animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.75) translateY(-10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* ESCENARIO PRINCIPAL */
+    .main-stage {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 28px 20px 108px;
+      width: 100%;
+      max-width: 1020px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 10;
+      perspective: 1300px;
+    }
+
+    body.ui-hidden .main-stage {
+      padding: 28px 20px 36px;
+    }
+
+    body.view-all .main-stage {
+      justify-content: flex-start;
+      gap: 32px;
+    }
+
+    /* TARJETA DE DIAPOSITIVA */
+    .slide-card {
+      width: 100%;
+      background: var(--card-grad);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 2px solid rgba(250, 204, 21, 0.65);
+      border-left: 9px solid #facc15;
+      border-radius: 18px;
+      padding: 36px 42px 26px;
+      box-shadow: 
+        0 25px 60px rgba(0, 0, 0, 0.68),
+        0 0 35px rgba(234, 179, 8, 0.14),
+        inset 0 1px 0 rgba(255, 255, 255, 0.22);
+      display: none;
+      flex-direction: column;
+      gap: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slide-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -120%;
+      width: 65%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.045), transparent);
+      transform: skewX(-25deg);
+      animation: cardSheen 9s infinite;
+      pointer-events: none;
+    }
+
+    @keyframes cardSheen {
+      0%, 60% { left: -120%; }
+      100% { left: 160%; }
+    }
+
+    .slide-card.active {
+      display: flex;
+    }
+
+    body.view-all .slide-card {
+      display: flex;
+      animation: fadeUpCard 0.5s ease both;
+    }
+
+    .anim-next {
+      animation: slideInRight 0.52s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    .anim-prev {
+      animation: slideInLeft 0.52s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    @keyframes slideInRight {
+      0% { opacity: 0; transform: translateX(55px) scale(0.96) rotateY(-5deg); }
+      100% { opacity: 1; transform: translateX(0) scale(1) rotateY(0deg); }
+    }
+
+    @keyframes slideInLeft {
+      0% { opacity: 0; transform: translateX(-55px) scale(0.96) rotateY(5deg); }
+      100% { opacity: 1; transform: translateX(0) scale(1) rotateY(0deg); }
+    }
+
+    @keyframes fadeUpCard {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .slide-header {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.22);
+      padding-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .slide-title {
+      font-family: 'Cinzel', serif;
+      color: #facc15;
+      font-size: calc(1.42rem * var(--font-scale));
+      letter-spacing: 0.08em;
+      font-weight: 800;
+      text-transform: uppercase;
+      outline: none;
+      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+      flex: 1;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+
+    .slide-badge {
+      font-size: 0.82rem;
+      color: var(--gold-light);
+      background: rgba(4, 11, 26, 0.6);
+      border: 1px solid rgba(250, 204, 21, 0.45);
+      padding: 5px 13px;
+      border-radius: 99px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .slide-body {
+      font-size: calc(1.38rem * var(--font-scale));
+      line-height: 1.68;
+      color: var(--text-white);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      outline: none;
+      padding: 4px 6px;
+      border-radius: 8px;
+    }
+
+    /* =====================================================
+       1. SALUDO INICIAL EN GRANDE (SLIDE 1)
+       ===================================================== */
+    .slide-card.hero-slide {
+      background: radial-gradient(circle at 50% 20%, rgba(37, 99, 235, 0.42) 0%, rgba(9, 25, 56, 0.96) 80%);
+      border: 2px solid #facc15;
+      border-left: 2px solid #facc15;
+      padding: 52px 44px 36px;
+      text-align: center;
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.75), 0 0 50px rgba(250, 204, 21, 0.25);
+    }
+
+    .slide-card.hero-slide .slide-header {
+      flex-direction: column;
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .slide-card.hero-slide .slide-title {
+      font-size: calc(2.1rem * var(--font-scale));
+      background: linear-gradient(90deg, #fde047, #ffffff, #facc15, #fde047);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: goldShimmer 5s linear infinite;
+      letter-spacing: 0.1em;
+    }
+
+    @keyframes goldShimmer {
+      to { background-position: 200% center; }
+    }
+
+    .hero-greeting-box {
+      padding: 28px 24px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 22px;
+    }
+
+    .hero-ornament {
+      color: #facc15;
+      font-size: 1.5rem;
+      letter-spacing: 0.4em;
+      opacity: 0.9;
+      text-shadow: 0 0 15px rgba(250, 204, 21, 0.65);
+      animation: floatGentle 3.5s ease-in-out infinite alternate;
+      user-select: none;
+    }
+
+    @keyframes floatGentle {
+      from { transform: translateY(-3px) scale(0.98); opacity: 0.75; }
+      to { transform: translateY(3px) scale(1.03); opacity: 1; }
+    }
+
+    .hero-greeting-text {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: calc(2.55rem * var(--font-scale));
+      font-weight: 700;
+      line-height: 1.38;
+      color: #ffffff;
+      text-shadow: 0 4px 24px rgba(0, 0, 0, 0.65), 0 0 25px rgba(250, 204, 21, 0.25);
+      max-width: 820px;
+      margin: 0 auto;
+    }
+
+    /* =====================================================
+       2. RESALTADO DE NOMBRES Y NÚMEROS
+       ===================================================== */
+    .hl-name {
+      display: inline-block;
+      color: #fef08a;
+      font-weight: 800;
+      background: linear-gradient(135deg, rgba(234, 179, 8, 0.24) 0%, rgba(161, 98, 7, 0.32) 100%);
+      border: 1px solid rgba(250, 204, 21, 0.6);
+      border-bottom: 2px solid #facc15;
+      padding: 1px 10px;
+      border-radius: 8px;
+      box-shadow: 0 3px 12px rgba(234, 179, 8, 0.2);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .hl-name:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 16px rgba(250, 204, 21, 0.45);
+    }
+
+    .hl-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #facc15 0%, #ca8a04 100%);
+      color: #040b1a;
+      font-weight: 800;
+      padding: 1px 11px;
+      border-radius: 999px;
+      font-size: 0.94em;
+      box-shadow: 0 0 16px rgba(250, 204, 21, 0.55);
+      margin: 0 3px;
+      letter-spacing: 0.02em;
+    }
+
+    /* =====================================================
+       3. CANTOS Y PORCIONES DE CANTOS CENTRADOS
+       ===================================================== */
+    .verse-box {
+      background: radial-gradient(circle at 50% 0%, rgba(30, 64, 175, 0.45) 0%, rgba(4, 11, 26, 0.55) 100%);
+      border: 1px solid rgba(250, 204, 21, 0.45);
+      border-top: 3px solid #facc15;
+      border-bottom: 3px solid #facc15;
+      border-radius: 14px;
+      padding: 22px 26px;
+      text-align: center;
+      font-style: italic;
+      font-size: calc(1.42rem * var(--font-scale));
+      line-height: 1.72;
+      color: #fef9c3;
+      box-shadow: inset 0 0 25px rgba(234, 179, 8, 0.1), 0 8px 24px rgba(0, 0, 0, 0.3);
+      position: relative;
+    }
+
+    .verse-box::before {
+      content: "♪ PORCIÓN DEL CANTO ♪";
+      display: block;
+      font-family: 'Cinzel', serif;
+      font-style: normal;
+      font-size: 0.72rem;
+      letter-spacing: 0.22em;
+      color: var(--gold);
+      margin-bottom: 10px;
+      opacity: 0.9;
+    }
+
+    .hymn-box {
+      background: linear-gradient(180deg, rgba(6, 17, 40, 0.65) 0%, rgba(10, 25, 58, 0.78) 100%);
+      border: 2px solid rgba(250, 204, 21, 0.5);
+      border-radius: 16px;
+      padding: 28px 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 16px;
+      box-shadow: inset 0 2px 20px rgba(0, 0, 0, 0.45), 0 12px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .hymn-title {
+      font-family: 'Cinzel', serif;
+      color: #facc15;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: calc(1.45rem * var(--font-scale));
+      padding-bottom: 10px;
+      border-bottom: 2px solid rgba(250, 204, 21, 0.4);
+      width: 100%;
+      max-width: 520px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    .hymn-box p {
+      text-align: center;
+      line-height: 1.78;
+      max-width: 680px;
+    }
+
+    .stanza-num {
+      display: inline-block;
+      background: rgba(250, 204, 21, 0.18);
+      border: 1px solid #facc15;
+      color: #fef08a;
+      font-family: 'Cinzel', serif;
+      font-weight: 800;
+      padding: 3px 18px;
+      border-radius: 999px;
+      font-size: calc(1.02rem * var(--font-scale));
+      letter-spacing: 0.1em;
+      margin-top: 8px;
+      box-shadow: 0 0 14px rgba(234, 179, 8, 0.25);
+    }
+
+    /* =====================================================
+       4. SALMOS VISTOSOS (ESTILO PERGAMINO REAL BÍBLICO)
+       ===================================================== */
+    .psalm-box {
+      background: linear-gradient(145deg, rgba(8, 20, 48, 0.88) 0%, rgba(18, 43, 94, 0.85) 50%, rgba(8, 20, 48, 0.92) 100%);
+      border: 2px solid #facc15;
+      outline: 1px solid rgba(250, 204, 21, 0.35);
+      outline-offset: -7px;
+      border-radius: 16px;
+      padding: 28px 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 
+        0 15px 35px rgba(0, 0, 0, 0.55),
+        inset 0 0 35px rgba(234, 179, 8, 0.12);
+      position: relative;
+    }
+
+    .psalm-header {
+      text-align: center;
+      font-family: 'Cinzel', serif;
+      color: #fde047;
+      font-size: calc(1.38rem * var(--font-scale));
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      padding-bottom: 14px;
+      margin-bottom: 4px;
+      border-bottom: 1px solid rgba(250, 204, 21, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      text-shadow: 0 2px 12px rgba(234, 179, 8, 0.35);
+    }
+
+    .psalm-header::before,
+    .psalm-header::after {
+      content: "✦";
+      color: #facc15;
+      font-size: 1rem;
+    }
+
+    .psalm-verse {
+      background: rgba(255, 255, 255, 0.04);
+      border-left: 3px solid rgba(250, 204, 21, 0.7);
+      padding: 12px 18px;
+      border-radius: 0 10px 10px 0;
+      line-height: 1.65;
+      transition: background 0.25s ease, transform 0.25s ease;
+    }
+
+    .psalm-verse:hover {
+      background: rgba(250, 204, 21, 0.09);
+      transform: translateX(4px);
+    }
+
+    .verse-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 32px;
+      height: 32px;
+      padding: 0 8px;
+      background: linear-gradient(135deg, #facc15 0%, #b45309 100%);
+      color: #030916;
+      font-family: 'Cinzel', serif;
+      font-weight: 800;
+      font-size: 0.92rem;
+      border-radius: 999px;
+      margin-right: 10px;
+      box-shadow: 0 0 12px rgba(250, 204, 21, 0.5);
+      vertical-align: middle;
+    }
+
+    .sub-heading {
+      border-left: 4px solid #facc15;
+      padding-left: 14px;
+      color: #facc15;
+      font-weight: 700;
+      font-size: calc(1.38rem * var(--font-scale));
+      margin-top: 8px;
+    }
+
+    .closing-phrase {
+      margin-top: 6px;
+      padding-top: 14px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.28);
+      color: #fef08a;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .slide-card.active .slide-body > * {
+      animation: staggerFade 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .slide-card.active .slide-body > *:nth-child(1) { animation-delay: 0.05s; }
+    .slide-card.active .slide-body > *:nth-child(2) { animation-delay: 0.12s; }
+    .slide-card.active .slide-body > *:nth-child(3) { animation-delay: 0.19s; }
+    .slide-card.active .slide-body > *:nth-child(4) { animation-delay: 0.26s; }
+    .slide-card.active .slide-body > *:nth-child(5) { animation-delay: 0.33s; }
+
+    @keyframes staggerFade {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    [contenteditable="true"]:focus {
+      background: rgba(4, 11, 26, 0.5);
+      box-shadow: 0 0 0 2px #facc15, 0 0 20px rgba(250, 204, 21, 0.35);
+      outline: none;
+    }
+
+    /* CONTROLES DE CADA TARJETA */
+    .card-controls {
+      margin-top: 10px;
+      padding-top: 14px;
+      border-top: 1px dotted rgba(255, 255, 255, 0.25);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    body.ui-hidden .card-controls {
+      display: none !important;
+    }
+
+    .card-controls-left, .card-controls-right {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-card {
+      background: rgba(6, 16, 36, 0.8);
+      border: 1px solid var(--gold-border);
+      color: var(--text-white);
+      padding: 7px 13px;
+      font-size: 0.82rem;
+      border-radius: 7px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .btn-card:hover {
+      background: #040b1a;
+      border-color: var(--gold-light);
+      transform: translateY(-2px);
+    }
+
+    /* BARRA INFERIOR DE NAVEGACIÓN */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(4, 11, 26, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid var(--gold-border);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      z-index: 100;
+      transition: all 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+      box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.45);
+    }
+
+    body.ui-hidden .bottom-nav,
+    body.view-all .bottom-nav {
+      transform: translateY(120%);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .nav-btn {
+      background: linear-gradient(135deg, #1e4b94 0%, #133268 100%);
+      border: 1px solid var(--gold);
+      color: var(--text-white);
+      font-size: 1.06rem;
+      font-weight: 700;
+      padding: 13px 28px;
+      border-radius: 12px;
+      min-width: 215px;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .nav-btn:hover:not(:disabled) {
+      background: linear-gradient(135deg, #255bb3 0%, #1b458d 100%);
+      box-shadow: 0 0 22px rgba(234, 179, 8, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .nav-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .page-counter {
+      color: #facc15;
+      font-weight: 800;
+      font-size: 1.15rem;
+      min-width: 85px;
+      text-align: center;
+      cursor: pointer;
+      padding: 6px 10px;
+      border-radius: 8px;
+    }
+
+    /* BORDES TÁCTILES CUANDO LOS BOTONES ESTÁN OCULTOS */
+    .edge-tap {
+      position: fixed;
+      top: 70px;
+      bottom: 20px;
+      width: 44px;
+      z-index: 90;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      color: rgba(250, 204, 21, 0.25);
+      font-size: 1.8rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .edge-left { left: 0; }
+    .edge-right { right: 0; }
+
+    body.ui-hidden:not(.view-all) .edge-tap {
+      display: flex;
+    }
+
+    /* MODAL DE SINCRONIZACIÓN */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 18, 0.82);
+      backdrop-filter: blur(8px);
+      z-index: 400;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      overflow-y: auto;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-box {
+      background: linear-gradient(155deg, #102a5c 0%, #081530 100%);
+      border: 2px solid var(--gold);
+      border-radius: 16px;
+      max-width: 560px;
+      width: 100%;
+      padding: 24px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      max-height: 92vh;
+      overflow-y: auto;
+    }
+
+    .modal-title {
+      font-family: 'Cinzel', serif;
+      color: #facc15;
+      font-size: 1.15rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.15);
+      padding-bottom: 10px;
+    }
+
+    .sync-card {
+      background: rgba(4, 11, 26, 0.55);
+      border: 1px solid rgba(250, 204, 21, 0.3);
+      border-radius: 10px;
+      padding: 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .sync-card h4 { color: var(--gold-light); font-size: 0.93rem; }
+    .sync-card p { font-size: 0.8rem; color: #cbd5e1; line-height: 1.42; }
+    .input-row { display: flex; gap: 8px; }
+
+    .sync-input {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--gold-border);
+      color: #fff;
+      padding: 9px 12px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      outline: none;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 88px;
+      left: 50%;
+      transform: translateX(-50%) translateY(25px) scale(0.9);
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #022c22;
+      font-weight: 800;
+      padding: 11px 24px;
+      border-radius: 99px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      z-index: 500;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0) scale(1);
+    }
+
+    @media print {
+      body { background: #fff; color: #000; }
+      .top-bar, .bottom-nav, .card-controls, .floating-toggle, #particlesCanvas, .progress-track, .edge-tap {
+        display: none !important;
+      }
+      .main-stage { padding: 0; max-width: 100%; }
+      .slide-card {
+        display: flex !important;
+        background: #fff !important;
+        color: #000 !important;
+        border: 1px solid #ccc !important;
+        page-break-inside: avoid;
+        margin-bottom: 20px;
+        box-shadow: none !important;
+      }
+      .slide-body, .hero-greeting-text { color: #000 !important; text-shadow: none !important; }
+    }
+
+    @media (max-width: 860px) {
+      .slide-card { padding: 26px 24px 20px; }
+      .slide-card.hero-slide { padding: 38px 24px 28px; }
+      .hero-greeting-text { font-size: calc(2rem * var(--font-scale)); }
+      .slide-body { font-size: calc(1.24rem * var(--font-scale)); }
+      .nav-btn { min-width: 145px; padding: 12px 18px; font-size: 0.98rem; }
+    }
+
+    @media (max-width: 560px) {
+      .hint-text { display: none; }
+      .hero-greeting-text { font-size: calc(1.7rem * var(--font-scale)); }
+      .nav-btn { min-width: 115px; padding: 10px 14px; font-size: 0.9rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Barra de progreso -->
+  <div class="progress-track">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+
+  <!-- Partículas doradas animadas con JS -->
+  <canvas id="particlesCanvas"></canvas>
+
+  <!-- Botón flotante para volver a mostrar botones -->
+  <button class="floating-toggle" onclick="toggleUI()">
+    👁️ Mostrar botones
+  </button>
+
+  <!-- Zonas táctiles laterales cuando los botones están ocultos -->
+  <div class="edge-tap edge-left" onclick="prevSlide()" title="Anterior">‹</div>
+  <div class="edge-tap edge-right" onclick="nextSlide()" title="Siguiente">›</div>
+
+  <!-- BARRA SUPERIOR -->
+  <header class="top-bar">
+    <div class="hint-group">
+      <div class="hint-text" contenteditable="true">✎ Toca cualquier texto para editarlo.</div>
+      <div class="sync-status">
+        <span class="sync-dot"></span>
+        <span id="syncText">Autoguardado activo</span>
+      </div>
+    </div>
+
+    <div class="toolbar-actions">
+      <button class="btn" onclick="changeFontSize(-0.08)" title="Reducir letra">A-</button>
+      <button class="btn" onclick="changeFontSize(0.08)" title="Aumentar letra">A+</button>
+      <button class="btn" onclick="autoHighlightAll()" title="Resaltar nombres y números automáticamente">✨ Resaltar</button>
+      <button class="btn" onclick="toggleUI()">👁️ Ocultar botones</button>
+
+      <span class="divider">|</span>
+      <span class="label-group" contenteditable="true">Agregar:</span>
+      <button class="btn btn-blue" onclick="addSlide('alabanza')">Alabanza</button>
+      <button class="btn btn-blue" onclick="addSlide('canto')">Canto</button>
+      <button class="btn btn-blue" onclick="addSlide('blanco')">Sección en blanco</button>
+
+      <span class="divider">|</span>
+      <button class="btn" id="btnViewAll" onclick="toggleViewAll()">Ver todo</button>
+      <button class="btn" onclick="window.print()">Imprimir</button>
+      <button class="btn btn-gold" onclick="saveData(true)">Guardar</button>
+      <button class="btn btn-blue" onclick="openSyncModal()">☁️ Sincronizar</button>
+      <button class="btn" onclick="resetData()">Restablecer</button>
+    </div>
+  </header>
+
+  <!-- CONTENEDOR DE DIAPOSITIVAS -->
+  <main class="main-stage" id="slidesContainer"></main>
+
+  <!-- BARRA INFERIOR -->
+  <footer class="bottom-nav">
+    <button class="nav-btn" id="btnPrev" onclick="prevSlide()">← Atrás</button>
+    <div class="page-counter" id="pageCounter" onclick="toggleViewAll()">1 / 15</div>
+    <button class="nav-btn" id="btnNext" onclick="nextSlide()">Siguiente →</button>
+  </footer>
+
+  <!-- MODAL DE SINCRONIZACIÓN ANTI-ADBOCK -->
+  <div class="modal-backdrop" id="syncModal" onclick="if(event.target===this) closeSyncModal()">
+    <div class="modal-box">
+      <div class="modal-title">
+        <span>☁️ Guardar y abrir en cualquier sitio</span>
+        <button class="btn" onclick="closeSyncModal()">✕</button>
+      </div>
+
+      <!-- Opción 1: Enlace directo inmune a AdBlock -->
+      <div class="sync-card">
+        <h4>1. Enlace con tus cambios incluidos (Inmune a AdBlock)</h4>
+        <p>Genera un enlace directo que contiene todas tus ediciones adentro. Envíalo o ábrelo en tu Tablet y todo se actualizará automáticamente sin usar servidores externos.</p>
+        <button class="btn btn-gold" onclick="copyShareableUrl()">🔗 Copiar enlace con mis cambios</button>
+      </div>
+
+      <!-- Opción 2: Nube con conexión anti-bloqueo -->
+      <div class="sync-card">
+        <h4>2. Sincronizar en la Nube con Código Corto</h4>
+        <p>Toca <b>"Subir y Crear ID"</b> en tu PC para obtener un código corto (ej: <i>k9xP2mQ</i>). Luego escríbelo en tu Tablet y toca <b>"Bajar en Tablet"</b>.</p>
+        <div class="input-row">
+          <input type="text" id="cloudRoomInput" class="sync-input" placeholder="Aquí aparecerá tu código corto...">
+          <button class="btn btn-gold" onclick="pushToCloud()">⬆️ Subir y Crear ID</button>
+        </div>
+        <div class="input-row">
+          <button class="btn btn-blue" style="flex:1" onclick="pullFromCloud()">⬇️ Bajar cambios en esta Tablet</button>
+        </div>
+      </div>
+
+      <!-- Opción 3: Código de texto directo (Offline / Cero anuncios) -->
+      <div class="sync-card">
+        <h4>3. Código Portátil Directo (Copiar / Pegar)</h4>
+        <p>Si tienes bloqueadores estrictos, copia el código de tus cambios o pégalo aquí:</p>
+        <div class="input-row">
+          <input type="text" id="rawCodeInput" class="sync-input" placeholder="Pega aquí el código portátil si deseas cargar...">
+          <button class="btn" onclick="copyRawCode()">📋 Copiar</button>
+          <button class="btn btn-blue" onclick="loadRawCode()">Cargar</button>
+        </div>
+      </div>
+
+      <!-- Opción 4: Archivo -->
+      <div class="sync-card">
+        <h4>4. Respaldo en Archivo</h4>
+        <div class="input-row">
+          <button class="btn" style="flex:1" onclick="exportJsonFile()">📥 Descargar copia</button>
+          <button class="btn" style="flex:1" onclick="document.getElementById('fileInput').click()">📤 Cargar copia</button>
+          <input type="file" id="fileInput" accept=".json" style="display:none" onchange="importJsonFile(event)">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toastMsg">Cambios guardados</div>
+
+  <script>
+    const STORAGE_KEY = 'servicio_ninez_pro_v4';
+    const CLOUD_ID_KEY = 'servicio_ninez_cloud_id_v4';
+
+    const INITIAL_SLIDES = [
+      {
+        title: "SERVICIO ESPECIAL DE LA NIÑEZ",
+        hero: true,
+        content: `
+          <div class="hero-greeting-box">
+            <div class="hero-ornament">✦ ❖ ✦</div>
+            <p class="hero-greeting-text">La paz de dios y la gracia que es en su hijo amado <span class="hl-name">Jesucristo</span> este morando en sus corazones</p>
+            <div class="hero-ornament">✦ ❖ ✦</div>
+          </div>
+        `
+      },
+      {
+        title: "ORACIÓN INICIAL",
+        content: `
+          <p>Para dar inicio al servicio especial de la niñez, elevaremos la oración de reconcilio, en la cual pediremos perdón a Dios por todas nuestras faltas y desobediencias. Hagámoslo así, para la honra y la gloria del Señor.</p>
+          <p class="closing-phrase">Que nuestra oración sea Dios quien la allá recibido</p>
+        `
+      },
+      {
+        title: "PRIMER CANTO",
+        content: `
+          <p>Entonaremos nuestro primer canto, el número <span class="hl-num">9</span>, que lleva por título Ahora señor que me encuentro a tu lado. Y a su primera estrofa dice:</p>
+          <div class="verse-box">
+            <p>Ahora, Señor que me encuentro a tu lado,<br>
+            Huyó la tristeza de mi corazón;<br>
+            Mi copa rebosa de tus bendiciones,<br>
+            Por eso te alabo, bendito Señor.</p>
+          </div>
+          <p>Si lo hemos encontrado entonémoslo así para la honra y la gloria del señor</p>
+          <div class="hymn-box">
+            <div class="hymn-title">AHORA, SEÑOR</div>
+            <p>Ahora, Señor que me encuentro a tu lado,<br>
+            Huyó la tristeza de mi corazón;<br>
+            Mi copa rebosa de tus bendiciones,<br>
+            Por eso te alabo, bendito Señor.</p>
+            <div class="stanza-num">CORO</div>
+            <p>Guiame joh, Cristo! si, guíame,<br>
+            Guiame, Señor // junto a Ti // si, guíame;<br>
+            Que nada en el mundo me aparte de Ti.</p>
+            <div class="stanza-num">2</div>
+            <p>Hermosa es la senda que Tú nos marcaste,<br>
+            No hay otro camino en que se halle la paz<br>
+            Tú eres vida eterna, joh, fuente divina!,<br>
+            ¡Oh, senda gloriosa de luz y verdad!</p>
+            <div class="stanza-num">3</div>
+            <p>Mi alma disfruta tu gracia divina,<br>
+            Con gran regocijo tributo loor;<br>
+            Tu amor me ha llenado, tu amor satisface,<br>
+            Porque ésta es la obra de un Siervo de Dios.</p>
+            <div class="stanza-num">4</div>
+            <p>Mi anhelo es llegar a la patria celeste,<br>
+            En donde termina tristeza y dolor;<br>
+            Allí no habrá llanto, allí no habrá muerte,<br>
+            Allí es donde more el Apóstol de Dios.</p>
+          </div>
+          <p class="closing-phrase">Que nuestra alabanza sea para la honra y la gloria del señor</p>
+        `
+      },
+      {
+        title: "LECTURA DEL SALMO <span class='hl-num'>100</span>",
+        content: `
+          <p>Ahora meditaremos en las palabras de un salmo a fin de preparar nuestras almas, para que en una oración pidamos a Dios que bendiga a nuestro padre en la fe, nuestro hermano <span class="hl-name">Nasón Joaquín García</span>; que sea Dios quien lo bendiga y supla todas sus necesidades, concediéndole también salud y paz.</p>
+          <p>Dice el salmo así, para la honra y la gloria del Señor:</p>
+          <div class="psalm-box">
+            <div class="psalm-header">Jehová es tu guardador.</div>
+            <div class="psalm-verse"><span class="verse-num">121</span> Alzaré mis ojos a los montes;<br>¿De dónde vendrá mi socorro?</div>
+            <div class="psalm-verse"><span class="verse-num">2</span> Mi socorro viene de Jehová,<br>Que hizo los cielos y la tierra.</div>
+            <div class="psalm-verse"><span class="verse-num">3</span> No dará tu pie al resbaladero,<br>Ni se dormirá el que te guarda.</div>
+            <div class="psalm-verse"><span class="verse-num">4</span> He aquí, no se adormecerá ni dormirá<br>El que guarda a Israel.</div>
+            <div class="psalm-verse"><span class="verse-num">5</span> Jehová es tu guardador;<br>Jehová es tu sombra a tu mano derecha.</div>
+            <div class="psalm-verse"><span class="verse-num">6</span> El sol no te fatigará de día,<br>Ni la luna de noche.</div>
+            <div class="psalm-verse"><span class="verse-num">7</span> Jehová te guardará de todo mal;<br>Él guardará tu alma.</div>
+            <div class="psalm-verse"><span class="verse-num">8</span> Jehová guardará tu salida y tu entrada<br>Desde ahora y para siempre.</div>
+          </div>
+          <p class="closing-phrase">Que nuestra Oración sea para la honra y la gloria del señor.</p>
+        `
+      },
+      {
+        title: "SEGUNDO CANTO",
+        content: `
+          <p>Ahora entonaremos nuestro segundo canto, el número <span class="hl-num"># 303</span> que lleva por título Junto a ti, y que en su primera estrofa dice:</p>
+          <div class="verse-box">
+            <p>Junto a ti, yo mi vida he querido llevar<br>
+            Junto a ti, no me importa lo que ha de pasar<br>
+            Junto a ti, para siempre feliz yo seré<br>
+            Y feliz en el cielo diré<br>
+            Que triunfe, que triunfe.<br>
+            Por estar junto a ti.</p>
+          </div>
+          <p>Sí lo hemos encontrado, entonémoslo así para la honra y la gloria del señor.</p>
+          <div class="hymn-box">
+            <div class="hymn-title">JUNTO A TI</div>
+            <p>Junto a ti, yo mi vida he querido llevar<br>
+            Junto a ti, no me importa lo que ha de pasar<br>
+            Junto a ti, para siempre feliz yo seré<br>
+            Y feliz en el cielo diré<br>
+            Que triunfe, que triunfe,<br>
+            Por estar junto a ti.</p>
+            <div class="stanza-num">coro</div>
+            <p>No permitas que te deje mi señor<br>
+            Pues yo quiero seguir siempre junto a ti<br>
+            Que no hay otro amor<br>
+            Como el tuyo señor<br>
+            Donde vayas yo iré siempre cerca de ti</p>
+            <div class="stanza-num">2</div>
+            <p>Junto a ti, no me asustan las olas del mar<br>
+            Junto a ti, venceré toda la tempestad<br>
+            Junto a ti ni los vientos podrán azotar<br>
+            A mi vida jamás perturbar<br>
+            Soy feliz muy feliz<br>
+            Por estar junto a ti</p>
+            <div class="stanza-num">3</div>
+            <p>Junto a ti, a las grandes batallas yo iré<br>
+            Junto a ti enemigo gigante no hay<br>
+            Junto a ti en la lucha con fe y con valor<br>
+            Venceré y triunfante saldré<br>
+            Con tu ayuda yo se<br>
+            Victorioso saldré</p>
+          </div>
+          <p class="closing-phrase">Que nuestra alabanza sea para la honra y la gloria del señor</p>
+        `
+      },
+      {
+        title: "ORACIÓN POR LA FAMILIA DEL APÓSTOL",
+        content: `
+          <p>Se acerca una bendición más, la cual es elevar una oración por la familia del Apóstol de Jesucristo: por su esposa, sus hijos, sus nietos, su madre y toda su descendencia. Asimismo, oraremos por el hermano <span class="hl-name">Raymundo Braund</span> y su familia, por el diacono local <span class="hl-name">Arnoldo Sagastizado</span> y su familia, y por el cuerpo ministerial: pastores, diáconos, encargados, obreros y batallones. Pediremos para que nuestro Dios los bendiga y los proteja en cada momento. Hagámoslo así, y que sea para la honra y la gloria del Señor.</p>
+          <p class="closing-phrase">Que nuestra Oración sea para la honra y la gloria del señor.</p>
+        `
+      },
+      {
+        title: "ORDEN DEL SERVICIO",
+        content: `
+          <p>Ahora leeré el orden del servicio para iniciar nuestro servicio especial que dice así para la honra y la gloria del señor</p>
+          <div class="psalm-box">
+            <div class="psalm-header">Salmo de alabanza.</div>
+            <div class="psalm-verse"><span class="verse-num">100</span> cantad alegres a Dios, habitantes de toda la tierra.</div>
+            <div class="psalm-verse"><span class="verse-num">2</span> servid a Jehová con alegría;<br>Venid ante su presencia con regocijo.</div>
+            <div class="psalm-verse"><span class="verse-num">3</span> reconoced que Jehová es Dios;<br>Él nos hizo, y no nosotros a nosotros mismos;<br>Pueblo suyo somos, y ovejas de su prado.</div>
+            <div class="psalm-verse"><span class="verse-num">4</span> entrad por sus puertas con acción de gracias,<br>Por sus atrios con alabanza;<br>Alabadle, bendecid su nombre.</div>
+            <div class="psalm-verse"><span class="verse-num">5</span> porque Jehová es bueno; para siempre es su misericordia,<br>Y su verdad por todas las generaciones.</div>
+          </div>
+          <p class="closing-phrase">Sea el orden del servicio para la honra y la gloria del señor.</p>
+        `
+      },
+      {
+        title: "PARTICIPACIÓN",
+        content: `
+          <p>Habiendo leído el orden del servicio, corresponde dar inicio con el capítulo de memoria, que corresponde la bendición a nuestra hermana <span class="hl-name">Naara Lazo</span>. Tome su lugar, y que sea así para la honra y la gloria del Señor.</p>
+          <p class="closing-phrase">Que el capitulo y la alabanza sea para la honra y la gloria del señor</p>
+        `
+      },
+      {
+        title: "ALABANZA",
+        content: `
+          <p>Ahora le corresponde el turno de entonar una alabanza a Dios a nuestro hermano <span class="hl-name">Jafeth Rodriguez</span>. Tome su lugar, y que sea así para la honra y la gloria del Señor.</p>
+          <p class="closing-phrase">Que el canto sea para la honra y la gloria del señor</p>
+        `
+      },
+      {
+        title: "ALABANZA",
+        content: `
+          <p>El lugar para la siguiente alabanza es para la hermana <span class="hl-name">Zara Amaya</span>, tome su lugar y que sea para la honra y la gloria del señor.</p>
+          <p class="closing-phrase">Que el canto de nuestros hermanos sea para la honra y la gloria del señor</p>
+        `
+      },
+      {
+        title: "ALABANZA",
+        content: `
+          <p>A continuación, nuestro hermano <span class="hl-name">Atlai Torres</span>. Entonará una alabanza a Dios. Tome su lugar, el hermano, y que sea para la honra y la gloria del Señor.</p>
+          <p class="closing-phrase">Que el canto sea para la honra y la gloria del señor</p>
+        `
+      },
+      {
+        title: "CORO",
+        content: `
+          <p>El coro entonará una alabanza mientras pasamos a depositar nuestra ofrenda de amor. Invitamos al coro a tomar su lugar, y que todo sea para la honra y la gloria del Señor.</p>
+          <p class="closing-phrase">Que el canto del coro sea para la honra y la gloria del señor</p>
+        `
+      },
+      {
+        title: "ALABANZA",
+        content: `
+          <p>La siguiente hermana para entonar una alabanza a nuestro Dios está a cargo de nuestra hermana <span class="hl-name">Sarah Nuñez</span>. tome su lugar, hermana, y que sea para la honra y la gloria del Señor.</p>
+          <p class="closing-phrase">Que el canto de nuestros hermanos sea para la honra y la gloria del señor</p>
+        `
+      },
+      {
+        title: "CANTO",
+        content: `
+          <p>Entonaremos el canto numero <span class="hl-num">#203</span> que lleva por titulo en un tiempo de aceptación que en su primera estrofa dice:</p>
+          <div class="verse-box">
+            <p>En un tiempo de aceptación oh Apóstol de nuestro Dios,<br>
+            Tu palabra de amor nos dio un vivir mejor,<br>
+            somos gente feliz, dichosa por creer en tu Elección,<br>
+            Nuestras almas son el fruto de tu amor.</p>
+          </div>
+          <p>Si ya lo hemos encontrado entonémoslo así para la honra y la gloria del señor</p>
+          <div class="hymn-box">
+            <div class="hymn-title">EN UN TIEMPO DE ACEPTACIÓN<br><small>ELECCIÓN</small></div>
+            <p>En un tiempo de aceptación oh Apóstol de nuestro Dios,<br>
+            Tu palabra de amor nos dio un vivir mejor,<br>
+            somos gente feliz, dichosa por creer en tu Elección,<br>
+            Nuestras almas son el fruto de tu amor.</p>
+            <div class="stanza-num">CORO</div>
+            <p>Amamos tu Elección por todo lo que nos da,<br>
+            Hermoso es vivir disfrutando de su amistad,<br>
+            Amamos su Elección bendita y preciosa es,<br>
+            Cual Lluvia descendió y en el alma engendró la fe,<br>
+            Yo te llevo en el corazón, tú me llevas a una ciudad,<br>
+            Do un día veré la hermosa eternidad.</p>
+            <div class="stanza-num">2</div>
+            <p>Es gloriosa la comprensión que tus hijos disfrutan hoy,<br>
+            Porque es una fe y uno es el amor,<br>
+            La doctrina que Dios te ha dado en un pueblo nos unió,<br>
+            Miles de almas hoy proclaman tu Elección.</p>
+            <div class="stanza-num">3</div>
+            <p>Hoy tu pueblo siente la paz, tan preciosa felicidad,<br>
+            Las caricias que Dios por ti al alma da,<br>
+            Al estar junto a ti el alma no se puede resistir,<br>
+            Pues conoce lo que hay dentro de ti.</p>
+            <div class="stanza-num">4</div>
+            <p>Oh, que dicha poder gozar de tu santa autoridad,<br>
+            El divino poder que puede libertar,<br>
+            Lo que atares aquí, atado en los cielos estará,<br>
+            Porque toda potestad en ti está.</p>
+            <p><em>Autor: <span class="hl-name">Horacio de la Paz</span></em></p>
+          </div>
+          <p class="closing-phrase">Que nuestro canto sea para la honra y la gloria del señor</p>
+        `
+      },
+      {
+        title: "ORACION FINAL",
+        content: `
+          <p>Haremos una oración para presentar delante de nuestro Dios todos los votos de amor que mis hermanos trajeron a su presencia, pidiendo que sean recibidos como un perfume grato ante Él. Hagámoslo así para la honra y la gloria del Señor.</p>
+          <div class="sub-heading">Despedida.</div>
+          <p>Que nuestra oración haya sido para la honra y la gloria del Señor. De mi parte, deseo que la paz de Dios y la gracia de nuestro Señor <span class="hl-name">Jesucristo</span> sigan morando en sus corazones.</p>
+        `
+      }
+    ];
+
+    let slides = [];
+    let currentIndex = 0;
+    let fontScale = 1;
+    let slideDirection = 'next';
+    let autoSaveTimer = null;
+
+    function init() {
+      // 1. Verificar si el enlace trae los cambios incluidos (#data=...)
+      if (window.location.hash.startsWith('#data=')) {
+        try {
+          const encoded = window.location.hash.replace('#data=', '');
+          const decoded = decodeURIComponent(escape(atob(encoded)));
+          slides = JSON.parse(decoded);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(slides));
+          history.replaceState(null, null, window.location.pathname);
+          showToast('¡Programa actualizado desde el enlace!');
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      // 2. Cargar desde almacenamiento local si no vino por enlace
+      if (!slides || !slides.length) {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          try {
+            slides = JSON.parse(saved);
+          } catch (e) {
+            slides = JSON.parse(JSON.stringify(INITIAL_SLIDES));
+          }
+        } else {
+          slides = JSON.parse(JSON.stringify(INITIAL_SLIDES));
+        }
+      }
+
+      const savedCloudId = localStorage.getItem(CLOUD_ID_KEY);
+      if (savedCloudId) {
+        document.getElementById('cloudRoomInput').value = savedCloudId;
+      }
+
+      renderSlides();
+      setupSwipe();
+      setupKeyboard();
+      initParticles();
+      initRipples();
+    }
+
+    function renderSlides() {
+      const container = document.getElementById('slidesContainer');
+      container.innerHTML = '';
+
+      slides.forEach((slide, idx) => {
+        const card = document.createElement('section');
+        const isActive = idx === currentIndex;
+        const isHero = idx === 0 || slide.hero;
+        const animClass = isActive ? (slideDirection === 'next' ? 'anim-next' : 'anim-prev') : '';
+        card.className = `slide-card ${isHero ? 'hero-slide' : ''} ${isActive ? 'active' : ''} ${animClass}`;
+        card.innerHTML = `
+          <div class="slide-header">
+            <h2 class="slide-title" contenteditable="true" oninput="liveSaveTitle(${idx}, this.innerHTML)">${slide.title}</h2>
+            <span class="slide-badge">${idx + 1} / ${slides.length}</span>
+          </div>
+          <div class="slide-body" contenteditable="true" oninput="liveSaveContent(${idx}, this.innerHTML)">
+            ${slide.content}
+          </div>
+          <div class="card-controls">
+            <div class="card-controls-left">
+              <button class="btn-card" onclick="insertParagraph(${idx})">+ Párrafo</button>
+              <button class="btn-card" onclick="insertVerseBox(${idx})">+ Porción Canto</button>
+              <button class="btn-card" onclick="insertPsalmBox(${idx})">+ Salmo</button>
+            </div>
+            <div class="card-controls-right">
+              <button class="btn-card" onclick="moveSlide(${idx}, -1)">▲ Subir</button>
+              <button class="btn-card" onclick="moveSlide(${idx}, 1)">▼ Bajar</button>
+              <button class="btn-card" onclick="duplicateSlide(${idx})">Duplicar</button>
+              <button class="btn-card" onclick="deleteSlide(${idx})">Eliminar</button>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      updateNav();
+    }
+
+    function updateNav() {
+      const total = slides.length;
+      document.getElementById('pageCounter').innerText = `${currentIndex + 1} / ${total}`;
+      document.getElementById('btnPrev').disabled = currentIndex === 0;
+      document.getElementById('btnNext').disabled = currentIndex === total - 1;
+      const pct = total > 1 ? ((currentIndex + 1) / total) * 100 : 100;
+      document.getElementById('progressBar').style.width = `${pct}%`;
+    }
+
+    function liveSaveTitle(idx, html) {
+      slides[idx].title = html;
+      triggerLiveSave();
+    }
+
+    function liveSaveContent(idx, html) {
+      slides[idx].content = html;
+      triggerLiveSave();
+    }
+
+    function triggerLiveSave() {
+      document.getElementById('syncText').innerText = 'Guardando...';
+      clearTimeout(autoSaveTimer);
+      autoSaveTimer = setTimeout(() => {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(slides));
+        document.getElementById('syncText').innerText = 'Guardado ✓';
+      }, 350);
+    }
+
+    // RESALTADOR AUTOMÁTICO DE NOMBRES Y NÚMEROS
+    function autoHighlightAll() {
+      slides.forEach(s => {
+        s.content = s.content.replace(/(?<!class="hl-num">)(#\s?\d+|\b(?:número|numero)\s+#?\s?\d+)/gi, match => {
+          if (match.includes('hl-num')) return match;
+          return match.replace(/(#?\s?\d+)/, '<span class="hl-num">$1</span>');
+        });
+        s.content = s.content.replace(/(hermano|hermana)\s+(?!<span)([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){0,2})/g, '$1 <span class="hl-name">$2</span>');
+      });
+      saveData(false);
+      renderSlides();
+      showToast('✨ Nombres y números resaltados');
+    }
+
+    function insertParagraph(idx) {
+      slides[idx].content += `<p>Nuevo texto editable...</p>`;
+      saveData(false);
+      renderSlides();
+    }
+
+    function insertVerseBox(idx) {
+      slides[idx].content += `<div class="verse-box"><p>Primera línea del canto centrado<br>Segunda línea del canto centrado</p></div>`;
+      saveData(false);
+      renderSlides();
+    }
+
+    function insertPsalmBox(idx) {
+      slides[idx].content += `
+        <div class="psalm-box">
+          <div class="psalm-header">Título del Salmo</div>
+          <div class="psalm-verse"><span class="verse-num">1</span> Texto del versículo bíblico...</div>
+        </div>
+      `;
+      saveData(false);
+      renderSlides();
+    }
+
+    function prevSlide() {
+      if (currentIndex > 0) {
+        slideDirection = 'prev';
+        currentIndex--;
+        renderSlides();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    function nextSlide() {
+      if (currentIndex < slides.length - 1) {
+        slideDirection = 'next';
+        currentIndex++;
+        renderSlides();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    function moveSlide(idx, dir) {
+      const target = idx + dir;
+      if (target < 0 || target >= slides.length) return;
+      const temp = slides[idx];
+      slides[idx] = slides[target];
+      slides[target] = temp;
+      currentIndex = target;
+      saveData(true);
+      renderSlides();
+    }
+
+    function duplicateSlide(idx) {
+      const copy = JSON.parse(JSON.stringify(slides[idx]));
+      copy.hero = false;
+      slides.splice(idx + 1, 0, copy);
+      currentIndex = idx + 1;
+      saveData(true);
+      renderSlides();
+    }
+
+    function deleteSlide(idx) {
+      if (slides.length <= 1) return;
+      if (!confirm('¿Eliminar esta sección?')) return;
+      slides.splice(idx, 1);
+      if (currentIndex >= slides.length) currentIndex = slides.length - 1;
+      saveData(true);
+      renderSlides();
+    }
+
+    function addSlide(type) {
+      let newSlide = { title: "NUEVA SECCIÓN", content: "<p>Toca aquí para editar el contenido...</p>" };
+      if (type === 'alabanza') {
+        newSlide = {
+          title: "ALABANZA",
+          content: `<p>El lugar para la siguiente alabanza es para nuestro(a) hermano(a) <span class="hl-name">Nombre Apellido</span>. Tome su lugar, y que sea para la honra y la gloria del Señor.</p><p class="closing-phrase">Que el canto sea para la honra y la gloria del señor</p>`
+        };
+      } else if (type === 'canto') {
+        newSlide = {
+          title: "CANTO",
+          content: `<p>Entonaremos el canto número <span class="hl-num">#100</span> que lleva por título Nombre del Canto:</p><div class="verse-box"><p>Primera estrofa centrada...</p></div><div class="hymn-box"><div class="hymn-title">TÍTULO DEL CANTO</div><p>Letra centrada del canto...</p><div class="stanza-num">CORO</div><p>Letra del coro centrado...</p></div><p class="closing-phrase">Que nuestra alabanza sea para la honra y la gloria del señor</p>`
+        };
+      }
+      slideDirection = 'next';
+      slides.splice(currentIndex + 1, 0, newSlide);
+      currentIndex++;
+      saveData(true);
+      renderSlides();
+    }
+
+    function toggleUI() {
+      document.body.classList.toggle('ui-hidden');
+    }
+
+    function toggleViewAll() {
+      const isAll = document.body.classList.toggle('view-all');
+      document.getElementById('btnViewAll').innerText = isAll ? 'Vista individual' : 'Ver todo';
+    }
+
+    function changeFontSize(delta) {
+      fontScale = Math.min(1.55, Math.max(0.75, fontScale + delta));
+      document.documentElement.style.setProperty('--font-scale', fontScale);
+    }
+
+    function saveData(notify) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(slides));
+      document.getElementById('syncText').innerText = 'Guardado ✓';
+      if (notify) showToast('¡Cambios guardados!');
+    }
+
+    function resetData() {
+      if (confirm('¿Restablecer todo el programa a su versión original?')) {
+        localStorage.removeItem(STORAGE_KEY);
+        slides = JSON.parse(JSON.stringify(INITIAL_SLIDES));
+        currentIndex = 0;
+        renderSlides();
+        showToast('Programa restablecido');
+      }
+    }
+
+    // ===============================================================
+    // SINCRONIZACIÓN ANTI-ADBLOCK (MÚLTIPLES VÍAS DE RESPALDO)
+    // ===============================================================
+    function openSyncModal() { document.getElementById('syncModal').classList.add('open'); }
+    function closeSyncModal() { document.getElementById('syncModal').classList.remove('open'); }
+
+    // 1. Enlace directo (No usa servidores externos, 100% inmune a AdBlock)
+    function copyShareableUrl() {
+      try {
+        const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(slides))));
+        const fullUrl = `${window.location.origin}${window.location.pathname}#data=${encoded}`;
+        navigator.clipboard.writeText(fullUrl);
+        showToast('🔗 ¡Enlace copiado! Ábrelo en tu Tablet');
+      } catch (e) {
+        alert('No se pudo copiar automáticamente.');
+      }
+    }
+
+    // 2. Nube con cabeceras simples text/plain (Evita filtros CORS y AdBlock)
+    async function pushToCloud() {
+      showToast('☁️ Subiendo a la nube...');
+      const payload = JSON.stringify({ updated: Date.now(), slides });
+
+      try {
+        const res = await fetch('https://bytebin.lucko.me/post', {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+          body: payload
+        });
+        const data = await res.json();
+        if (data && data.key) {
+          document.getElementById('cloudRoomInput').value = data.key;
+          localStorage.setItem(CLOUD_ID_KEY, data.key);
+          navigator.clipboard.writeText(data.key).catch(() => {});
+          showToast(`☁️ ¡Subido! Tu código es: ${data.key}`);
+          return;
+        }
+        throw new Error('Sin clave');
+      } catch (err) {
+        // Si el navegador tiene un bloqueador extremo, copia automáticamente el enlace directo
+        copyShareableUrl();
+      }
+    }
+
+    async function pullFromCloud() {
+      const roomId = document.getElementById('cloudRoomInput').value.trim();
+      if (!roomId) return alert('Escribe primero el código corto que te dio tu PC.');
+      showToast('☁️ Descargando cambios...');
+
+      try {
+        localStorage.setItem(CLOUD_ID_KEY, roomId);
+        const res = await fetch(`https://bytebin.lucko.me/${roomId}`);
+        const text = await res.text();
+        const data = JSON.parse(text);
+        if (data && Array.isArray(data.slides)) {
+          slides = data.slides;
+          saveData(false);
+          renderSlides();
+          closeSyncModal();
+          showToast('☁️ ¡Programa actualizado en la Tablet!');
+        } else {
+          alert('No se encontraron datos con ese código.');
+        }
+      } catch (e) {
+        alert('Verifica que el código esté bien escrito.');
+      }
+    }
+
+    // 3. Código Portátil Directo (100% libre de red externa)
+    function copyRawCode() {
+      try {
+        const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(slides))));
+        document.getElementById('rawCodeInput').value = encoded;
+        navigator.clipboard.writeText(encoded);
+        showToast('📋 ¡Código portátil copiado!');
+      } catch (e) {
+        alert('Error al generar código.');
+      }
+    }
+
+    function loadRawCode() {
+      const code = document.getElementById('rawCodeInput').value.trim();
+      if (!code) return alert('Pega primero el código portátil en la cajita.');
+      try {
+        const clean = code.includes('#data=') ? code.split('#data=')[1] : code;
+        const decoded = decodeURIComponent(escape(atob(clean)));
+        const parsed = JSON.parse(decoded);
+        if (Array.isArray(parsed)) {
+          slides = parsed;
+          currentIndex = 0;
+          saveData(false);
+          renderSlides();
+          closeSyncModal();
+          showToast('✅ ¡Programa cargado con éxito!');
+        }
+      } catch (e) {
+        alert('El código pegado no está completo.');
+      }
+    }
+
+    // 4. Respaldo en Archivo JSON
+    function exportJsonFile() {
+      const blob = new Blob([JSON.stringify(slides, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'servicio-especial-ninez.json';
+      a.click();
+    }
+
+    function importJsonFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (Array.isArray(imported)) {
+            slides = imported;
+            currentIndex = 0;
+            saveData(true);
+            renderSlides();
+            closeSyncModal();
+          }
+        } catch (err) {
+          alert('Archivo inválido.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toastMsg');
+      t.innerText = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2600);
+    }
+
+    // GESTOS SWIPE PARA TABLET
+    function setupSwipe() {
+      let touchStartX = 0;
+      let touchStartY = 0;
+      const stage = document.getElementById('slidesContainer');
+
+      stage.addEventListener('touchstart', e => {
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+      }, { passive: true });
+
+      stage.addEventListener('touchend', e => {
+        if (document.body.classList.contains('view-all')) return;
+        if (document.activeElement && document.activeElement.isContentEditable) return;
+        const diffX = touchStartX - e.changedTouches[0].screenX;
+        const diffY = Math.abs(touchStartY - e.changedTouches[0].screenY);
+        if (Math.abs(diffX) > 65 && diffY < 90) {
+          if (diffX > 0) nextSlide();
+          else prevSlide();
+        }
+      }, { passive: true });
+    }
+
+    function setupKeyboard() {
+      window.addEventListener('keydown', e => {
+        if (document.activeElement && document.activeElement.isContentEditable) return;
+        if (document.getElementById('syncModal').classList.contains('open')) return;
+        if (e.key === 'ArrowRight') nextSlide();
+        if (e.key === 'ArrowLeft') prevSlide();
+      });
+    }
+
+    function initRipples() {
+      document.addEventListener('click', e => {
+        const btn = e.target.closest('.btn, .nav-btn');
+        if (!btn) return;
+        const rect = btn.getBoundingClientRect();
+        const ripple = document.createElement('span');
+        const size = Math.max(rect.width, rect.height);
+        ripple.style.width = ripple.style.height = `${size}px`;
+        ripple.style.left = `${e.clientX - rect.left - size / 2}px`;
+        ripple.style.top = `${e.clientY - rect.top - size / 2}px`;
+        ripple.className = 'ripple-effect';
+        btn.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 600);
+      });
+    }
+
+    function initParticles() {
+      const canvas = document.getElementById('particlesCanvas');
+      const ctx = canvas.getContext('2d');
+      let w, h, particles = [];
+
+      function resize() {
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      for (let i = 0; i < 32; i++) {
+        particles.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          r: Math.random() * 2.2 + 0.6,
+          vx: (Math.random() - 0.5) * 0.25,
+          vy: -Math.random() * 0.35 - 0.1,
+          alpha: Math.random() * 0.55 + 0.15
+        });
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, w, h);
+        particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          if (p.y < -10) p.y = h + 10;
+          if (p.x < -10) p.x = w + 10;
+          if (p.x > w + 10) p.x = -10;
+
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(250, 204, 21, ${p.alpha})`;
+          ctx.fill();
+        });
+        requestAnimationFrame(animate);
+      }
+      animate();
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
